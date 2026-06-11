@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Planner">
+<link rel="manifest" href="manifest.json">
+<title>Day Planner</title>
+<style>
+:root { color-scheme: light;
+  --bg:#f7f6f3; --card:#fff; --ink:#1a1a1a; --muted:#6b6b6b; --line:#e3e0da;
+  --accent:#0048A8; --warn:#b45309; --err:#b91c1c; --ok:#15803d;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system,"Segoe UI",system-ui,sans-serif;padding:0 0 70px;-webkit-text-size-adjust:100%}
+header{display:flex;align-items:baseline;gap:8px;padding:14px 14px 4px;flex-wrap:wrap}
+header h1{font-size:19px;font-weight:700}
+header .meta{color:var(--muted);font-size:12.5px}
+header .btns{margin-left:auto;display:flex;gap:6px}
+header button{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:4px 11px;font:600 13px -apple-system,sans-serif;color:var(--ink)}
+.banner{margin:6px 14px 0;font-size:12px;color:var(--muted)}
+.flags{margin:6px 14px 0;display:flex;flex-direction:column;gap:4px}
+.flag{font-size:12px;border-left:3px solid var(--warn);background:#fff8eb;padding:5px 9px;border-radius:0 6px 6px 0}
+.flag.error{border-color:var(--err);background:#fef2f2}
+.flag.info{border-color:#64748b;background:#f1f5f9}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav button{flex:1;appearance:none;border:0;background:none;font:600 11.5px -apple-system,sans-serif;color:var(--muted);padding:10px 2px 8px;border-top:2px solid transparent}
+nav button.on{color:var(--accent);border-top-color:var(--accent)}
+#content{padding:0 12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:12px 0;overflow:hidden}
+.card h2{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:9px 13px;border-bottom:1px solid var(--line);background:#fbfaf8}
+.card .body{padding:9px 13px}
+.chip{display:inline-block;font-size:10px;font-weight:700;border-radius:4px;padding:1px 6px;color:#fff;margin-right:6px;white-space:nowrap}
+.row{display:flex;gap:9px;padding:8px 0;border-bottom:1px solid #f0eee9;align-items:flex-start}
+.row:last-child{border-bottom:0}
+.slot{min-width:64px;color:var(--muted);font-variant-numeric:tabular-nums;font-size:13px}
+.src{color:#9a9a9a;font-size:11px;margin-left:5px}
+.todo{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid #f0eee9}
+.todo:last-child{border-bottom:0}
+.todo input{margin-top:3px;width:19px;height:19px;accent-color:var(--accent)}
+.todo.checked .txt{color:#9a9a9a;text-decoration:line-through}
+.carry{font-size:11px;font-weight:700;color:var(--warn);margin-right:5px}
+.carry.hot{color:var(--err)}
+.nr{font-size:9.5px;font-weight:700;color:#fff;background:var(--err);border-radius:4px;padding:1px 5px;margin-left:6px}
+.note{padding:9px 0;border-bottom:1px solid #f0eee9}
+.note:last-child{border-bottom:0}
+.note .hd{font-weight:650;font-size:14px;margin-bottom:2px}
+.note .bd{color:#333;white-space:pre-wrap;font-size:13.5px}
+.empty{color:var(--muted);font-style:italic;padding:8px 0}
+.kv{color:var(--muted);font-size:11.5px}
+.theme{font-size:15px;font-weight:600;font-style:italic}
+.rock{padding:7px 0;border-bottom:1px solid #f0eee9}
+.rock:last-child{border-bottom:0}
+.addbar{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.addbar select,.addbar input{border:1px solid var(--line);border-radius:8px;padding:8px;font:14px -apple-system,sans-serif;background:#fff}
+.addbar input{flex:1;min-width:120px}
+.addbar button{border:0;background:var(--accent);color:#fff;border-radius:8px;padding:8px 16px;font:600 14px -apple-system,sans-serif}
+.sync{position:fixed;bottom:62px;right:12px;font-size:12px;background:var(--card);border:1px solid var(--line);border-radius:99px;padding:5px 12px;color:var(--muted);box-shadow:0 2px 8px rgba(0,0,0,.08);display:none;z-index:6}
+.sync.show{display:block}.sync.ok{color:var(--ok)}.sync.err{color:var(--err)}
+.nfbar{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 2px}
+.nf{border:1px solid var(--line);background:var(--card);border-radius:99px;padding:5px 12px;font:600 12px -apple-system,sans-serif;color:var(--muted)}
+.nf.on{border-color:var(--ec,var(--accent));color:var(--ink);box-shadow:inset 0 0 0 1px var(--ec,var(--accent))}
+.loading{padding:60px 20px;text-align:center;color:var(--muted)}
+.setup{max-width:420px;margin:40px auto;padding:0 16px}
+.setup .card .body{display:flex;flex-direction:column;gap:10px}
+.setup input{border:1px solid var(--line);border-radius:8px;padding:10px;font:14px monospace}
+.setup button{border:0;background:var(--accent);color:#fff;border-radius:8px;padding:11px;font:600 15px -apple-system,sans-serif}
+.setup p{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Day Planner</h1>
+  <span class="meta" id="hdrDate"></span>
+  <div class="btns"><button id="refreshBtn">↻</button><button id="setupBtn">⚙</button></div>
+</header>
+<div class="banner" id="banner"></div>
+<div class="flags" id="flags"></div>
+<div id="content"><div class="loading">Loading…</div></div>
+<nav id="nav">
+  <button data-t="today" class="on">Today</button>
+  <button data-t="horizon">Horizon</button>
+  <button data-t="compass">Compass</button>
+  <button data-t="ledger">Ledger</button>
+  <button data-t="notes">Notes</button>
+</nav>
+<div class="sync" id="sync"></div>
+<script>
+'use strict';
+const GH = { user:'oldcoug62-max', repo:'planner-state', branch:'main' };
+let S = null, queue = [], queueTimer = null;
+const $ = s => document.querySelector(s);
+const esc = t => (t==null?'':String(t)).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm = t => (t||'').replace(/\s+/g,' ').trim().toLowerCase();
+const tokGet = () => { try { return localStorage.getItem('ghToken') || ''; } catch(e) { return ''; } };
+const b64enc = s => btoa(unescape(encodeURIComponent(s)));
+
+function ghHeaders(raw) {
+  const h = { 'Authorization': 'Bearer ' + tokGet(), 'X-GitHub-Api-Version': '2022-11-28' };
+  h['Accept'] = raw ? 'application/vnd.github.raw+json' : 'application/vnd.github+json';
+  return h;
+}
+const apiBase = () => 'https://api.github.com/repos/'+GH.user+'/'+GH.repo+'/contents/';
+
+async function ghGetRaw(path) {
+  const r = await fetch(apiBase()+path+'?ref='+GH.branch+'&t='+Date.now(), { headers: ghHeaders(true), cache:'no-store' });
+  if (r.status === 401 || r.status === 403) throw { auth:true };
+  if (!r.ok) throw new Error('GitHub '+r.status+' on '+path);
+  return r.text();
+}
+async function ghList(path) {
+  const r = await fetch(apiBase()+path+'?ref='+GH.branch+'&t='+Date.now(), { headers: ghHeaders(false), cache:'no-store' });
+  if (r.status === 404) return [];
+  if (r.status === 401 || r.status === 403) throw { auth:true };
+  if (!r.ok) throw new Error('GitHub '+r.status+' on '+path);
+  return r.json();
+}
+async function ghPut(path, content, msg) {
+  const r = await fetch(apiBase()+path, { method:'PUT', headers: ghHeaders(false),
+    body: JSON.stringify({ message: msg, content: b64enc(content), branch: GH.branch }) });
+  if (r.status === 401 || r.status === 403) throw { auth:true };
+  if (!r.ok) throw new Error('GitHub PUT '+r.status);
+}
+
+function entityChip(key) {
+  if (!key || !S.entities[key]) return '<span class="chip" style="background:#8a8a8a">—</span>';
+  const e = S.entities[key];
+  return '<span class="chip" style="background:'+e.color+'">'+esc(e.name)+'</span>';
+}
+const carryBadge = n => n ? '<span class="carry'+(n>=3?' hot':'')+'">↻'+n+'</span>' : '';
+const fmtDay = d => new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+const mondayOf = d => { const dt = new Date(d+'T12:00:00'); dt.setDate(dt.getDate() - ((dt.getDay()+6)%7)); return dt.toISOString().slice(0,10); };
+
+/* ------------ load ------------ */
+function applyRecord(rec) {
+  for (const ch of (rec.changes||[])) {
+    const day = (S.today && S.today.dateInfo && S.today.dateInfo.date === ch.date) ? S.today : null;
+    if (ch.type === 'todo.check') {
+      const tgt = norm(ch.normText || ch.text);
+      if (day) for (const td of day.todos) if (norm(td.text) === tgt) td.checked = !!ch.checked;
+      for (const v of (S.ledger||[])) if (norm(v.text) === tgt) v._checked = !!ch.checked;
+    } else if (ch.type === 'todo.add' && day) {
+      if (!day.todos.some(td => norm(td.text) === norm(ch.text)))
+        day.todos.push({entity: ch.entity||null, text: ch.text, checked:false, carriedForward:false, carryCount:0, addedBy:'app'});
+    } else if (ch.type === 'note.add' && day) {
+      day.notes.push({entity: ch.entity||null, headingText: ch.headingText||'App note', body: ch.body||'', timeLabel:'Note'});
+      (S.notesLog = S.notesLog||[]).unshift({date: ch.date, entity: ch.entity||null, headingText: ch.headingText||'App note', body: ch.body||'', timeLabel:'Note'});
+    }
+  }
+}
+async function loadState() {
+  S = JSON.parse(await ghGetRaw('data/app-state.json'));
+  try {
+    const inbox = await ghList('inbox');
+    for (const f of inbox) {
+      if (!f.name.endsWith('.json')) continue;
+      const rid = f.name.replace(/\.json$/,'');
+      if ((S.appliedRecords||[]).includes(rid)) continue;
+      try { applyRecord(JSON.parse(await ghGetRaw('inbox/'+f.name))); } catch(e) {}
+    }
+  } catch(e) { if (e.auth) throw e; }
+}
+
+/* ------------ write-back ------------ */
+function savePending() { try { localStorage.setItem('plannerPendingGH', JSON.stringify(queue)); } catch(e) {} }
+function queueChange(ch) {
+  queue.push(ch); savePending();
+  $('#sync').className='sync show'; $('#sync').textContent='Saving…';
+  clearTimeout(queueTimer); queueTimer = setTimeout(flushQueue, 300);
+}
+async function flushQueue() {
+  if (!queue.length) return;
+  const changes = queue.splice(0, queue.length);
+  const rec = { recordId:'phone-'+Date.now()+'-'+Math.random().toString(36).slice(2,7),
+                createdAt:new Date().toISOString(), source:'phone', changes };
+  try {
+    await ghPut('inbox/'+rec.recordId+'.json', JSON.stringify(rec, null, 1), 'phone: '+changes.map(c=>c.type).join(','));
+    savePending();
+    $('#sync').className='sync show ok'; $('#sync').textContent='✓ Synced — applies next build';
+    setTimeout(()=>{ $('#sync').className='sync'; }, 3500);
+  } catch(e) {
+    queue.unshift(...changes); savePending();
+    $('#sync').className='sync show err'; $('#sync').textContent = e.auth ? 'Token invalid — tap ⚙' : 'Sync failed — will retry';
+    if (!e.auth) setTimeout(flushQueue, 8000);
+  }
+}
+function restorePending() {
+  let pend = [];
+  try { pend = JSON.parse(localStorage.getItem('plannerPendingGH')||'[]'); } catch(e) {}
+  if (!pend.length) return;
+  applyRecord({changes: pend});
+  queue.push(...pend); savePending();
+  setTimeout(flushQueue, 800);
+}
+
+/* ------------ renderers ------------ */
+function renderHeader() {
+  const di = (S.today && S.today.dateInfo) || {};
+  $('#hdrDate').textContent = (di.dayName||'')+' '+(di.date||'')+' · W'+(di.isoWeek||'')+' · '+(di.quarter||'');
+  const gen = (S.generatedAt||'').slice(5,16).replace('T',' ');
+  $('#banner').textContent = 'State as of '+gen+' (refreshed by each build/sweep — tap ↻ for latest)';
+  $('#flags').innerHTML = (S.flags||[]).slice(0,4).map(f=>'<div class="flag '+esc(f.level)+'">'+esc(f.text)+'</div>').join('');
+}
+function todoRow(td, i, source) {
+  const checked = td._checked != null ? td._checked : td.checked;
+  return '<div class="todo'+(checked?' checked':'')+'"><input type="checkbox" '+(checked?'checked':'')+' data-src="'+source+'" data-i="'+i+'"><span>'+carryBadge(td.carryCount)+entityChip(td.entity)+'<span class="txt">'+esc(td.text)+'</span>'+(td.needsReview?'<span class="nr">REVIEW</span>':'')+(td.sourceDate&&source==='ledger'?'<span class="src">· '+esc(td.sourceDate)+'</span>':'')+'</span></div>';
+}
+function renderToday() {
+  const sch = (S.today && S.today.schedule) || {};
+  const keys = Object.keys(sch);
+  let h = '<div class="card"><h2>Schedule · as of last build</h2><div class="body">'+
+    (keys.length ? keys.map(k=>{const v=sch[k];return '<div class="row"><span class="slot">'+esc(k)+'</span><span>'+(v.entity?entityChip(v.entity):'')+(v.bold?'<b>':'')+esc(v.text)+(v.bold?'</b>':'')+(v.source?'<span class="src">· '+esc(v.source)+'</span>':'')+'</span></div>';}).join('') : '<div class="empty">Schedule clear at last build.</div>')+'</div></div>';
+  const todos = (S.today && S.today.todos) || [];
+  h += '<div class="card"><h2>TO-DOs</h2><div class="body">'+(todos.map((td,i)=>todoRow(td,i,'today')).join('')||'<div class="empty">None.</div>')+
+    '<div class="addbar"><select id="addEnt"><option value="">—</option>'+Object.entries(S.entities).map(([k,v])=>'<option value="'+k+'">'+esc(v.name)+'</option>').join('')+'</select><input id="addTxt" placeholder="Add a TO-DO…"><button id="addBtn">Add</button></div></div></div>';
+  const notes = (S.today && S.today.notes) || [];
+  h += '<div class="card"><h2>Today’s notes</h2><div class="body">'+(notes.map(n=>'<div class="note"><div class="hd">'+(n.entity?entityChip(n.entity):'')+esc(n.headingText)+'</div><div class="bd">'+esc(n.body)+'</div></div>').join('')||'<div class="empty">None yet.</div>')+'</div></div>';
+  return h;
+}
+function renderHorizon() {
+  const items = {};
+  const add = (d,it)=>{(items[d]=items[d]||[]).push(it)};
+  for (const [d,day] of Object.entries(S.futureDays||{})) {
+    if (day.inferredFrom) add(d,{text:'⚠ '+day.inferredFrom});
+    for (const [slot,v] of Object.entries(day.schedule||{})) add(d,{text:slot+' · '+v.text, entity:v.entity});
+    for (const td of (day.todos||[])) if(!td.checked) add(d,{text:'☐ '+td.text, entity:td.entity});
+    for (const n of (day.notes||[])) add(d,{text:n.headingText, entity:n.entity});
+  }
+  const dates = Object.keys(items).sort();
+  const today = S.todayDate;
+  const dOut = d => Math.round((new Date(d+'T12:00:00')-new Date(today+'T12:00:00'))/86400000);
+  const near = dates.filter(d=>dOut(d)<=14), mid = dates.filter(d=>dOut(d)>14&&dOut(d)<=42), far = dates.filter(d=>dOut(d)>42);
+  const item = it => '<div class="row"><span>'+(it.entity?entityChip(it.entity):'')+esc(it.text)+'</span></div>';
+  let h = '<div class="kv" style="padding:8px 4px 0">Planner state only — calendar pulls land here at each build.</div>';
+  h += '<div class="card"><h2>Next 14 days</h2><div class="body">'+(near.length?near.map(d=>'<div class="note"><div class="hd">'+fmtDay(d)+' <span class="src">· '+dOut(d)+'d</span></div>'+items[d].map(item).join('')+'</div>').join(''):'<div class="empty">Nothing committed.</div>')+'</div></div>';
+  const byW = {}; for (const d of mid) (byW[mondayOf(d)]=byW[mondayOf(d)]||[]).push(d);
+  h += '<div class="card"><h2>Weeks 3–6</h2><div class="body">'+(mid.length?Object.keys(byW).sort().map(w=>'<div class="note"><div class="hd">Week of '+fmtDay(w)+'</div>'+byW[w].map(d=>items[d].map(item).join('')).join('')+'</div>').join(''):'<div class="empty">Open runway.</div>')+'</div></div>';
+  const byM = {}; for (const d of far) { const m = new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'long'}); (byM[m]=byM[m]||[]).push(d); }
+  h += '<div class="card"><h2>Beyond</h2><div class="body">'+(far.length?Object.entries(byM).map(([m,ds])=>'<div class="note"><div class="hd">'+esc(m)+'</div>'+ds.map(d=>items[d].map(item).join('')).join('')+'</div>').join(''):'<div class="empty">Clear past six weeks.</div>')+'</div></div>';
+  return h;
+}
+function renderCompass() {
+  let h = '';
+  const q = S.quarter;
+  if (q) {
+    const rocks = (q.rocks||[]).filter(r=>(r.rocks||[]).length);
+    h += '<div class="card"><h2>'+esc(q.quarter)+' rocks'+(q.draft?' · DRAFT':'')+'</h2><div class="body">'+(rocks.length?rocks.map(r=>r.rocks.map(x=>'<div class="rock">'+entityChip(r.entity)+esc(x)+'</div>').join('')).join(''):'<div class="empty">None set.</div>')+'</div></div>';
+  }
+  const c = S.compass;
+  if (!c) return h + '<div class="card"><div class="body empty">No compass yet.</div></div>';
+  h += '<div class="card"><h2>Week '+c.week+' · '+esc(c.range||'')+'</h2><div class="body"><div class="theme">'+(esc(c.theme)||'<span class=empty>No theme.</span>')+'</div></div></div>';
+  h += '<div class="card"><h2>Big rocks</h2><div class="body">'+((c.bigRocks||[]).map(r=>r.rocks.map(x=>'<div class="rock">'+entityChip(r.entity)+esc(x)+'</div>').join('')).join('')||'<div class="empty">None.</div>')+'</div></div>';
+  if ((c.rhythms||[]).length) h += '<div class="card"><h2>Rhythms</h2><div class="body">'+c.rhythms.map(r=>'<div class="row"><span class="slot">'+esc(r.day)+'</span><span>'+esc(r.text)+'</span></div>').join('')+'</div></div>';
+  return h;
+}
+function renderLedger() {
+  const nr = (S.ledger||[]).filter(v=>v.needsReview && !(v._checked!=null?v._checked:v.checked));
+  const open = (S.ledger||[]).filter(v=>!v.needsReview);
+  let h = '';
+  if (nr.length) h += '<div class="card"><h2 style="color:var(--err)">Needs review · ↻3+</h2><div class="body">'+nr.map(v=>todoRow(v,S.ledger.indexOf(v),'ledger')).join('')+'</div></div>';
+  h += '<div class="card"><h2>Open TO-DOs ('+open.length+')</h2><div class="body">'+(open.map(v=>todoRow(v,S.ledger.indexOf(v),'ledger')).join('')||'<div class="empty">Clear.</div>')+'</div></div>';
+  return h;
+}
+let notesFilter = 'all';
+try { notesFilter = localStorage.getItem('plannerNotesFilterGH')||'all'; } catch(e) {}
+function renderNotes() {
+  const log = S.notesLog || [];
+  const ents = Object.keys(S.entities);
+  const counts = {};
+  for (const n of log) { const k = n.entity||'untagged'; counts[k]=(counts[k]||0)+1; }
+  let chips = '<div class="nfbar"><button class="nf'+(notesFilter==='all'?' on':'')+'" data-f="all">All ('+log.length+')</button>';
+  for (const k of ents) if (counts[k]) chips += '<button class="nf'+(notesFilter===k?' on':'')+'" data-f="'+k+'" style="--ec:'+S.entities[k].color+'">'+esc(S.entities[k].name)+' ('+counts[k]+')</button>';
+  if (counts.untagged) chips += '<button class="nf'+(notesFilter==='untagged'?' on':'')+'" data-f="untagged">Untagged ('+counts.untagged+')</button>';
+  chips += '</div>';
+  const add = '<div class="card"><h2>Add note · today</h2><div class="body"><div class="addbar"><select id="ntEnt"><option value="">—</option>'+ents.map(k=>'<option value="'+k+'">'+esc(S.entities[k].name)+'</option>').join('')+'</select><input id="ntTopic" placeholder="Topic…"><input id="ntBody" placeholder="Note…"><button id="ntBtn">Add</button></div></div></div>';
+  const sel = log.filter(n => notesFilter==='all' || (n.entity||'untagged')===notesFilter);
+  const byDate = {};
+  for (const n of sel) (byDate[n.date]=byDate[n.date]||[]).push(n);
+  const ds = Object.keys(byDate).sort().reverse();
+  const body = ds.length ? ds.map(d=>'<div class="card"><h2>'+fmtDay(d)+'</h2><div class="body">'+byDate[d].map(n=>'<div class="note"><div class="hd">'+(n.entity?entityChip(n.entity):'')+esc(n.headingText)+'</div><div class="bd">'+esc(n.body)+'</div></div>').join('')+'</div></div>').join('') : '<div class="card"><div class="body empty">No notes for this filter.</div></div>';
+  return chips + add + body;
+}
+
+const TABS = { today:renderToday, horizon:renderHorizon, compass:renderCompass, ledger:renderLedger, notes:renderNotes };
+let cur = 'today';
+function render() {
+  renderHeader();
+  $('#content').innerHTML = TABS[cur]();
+  document.querySelectorAll('.todo input[type=checkbox]').forEach(cb => {
+    cb.addEventListener('change', () => {
+      const src = cb.dataset.src, i = +cb.dataset.i;
+      const item = src==='today' ? S.today.todos[i] : S.ledger[i];
+      if (!item) return;
+      if (src==='today') item.checked = cb.checked; else item._checked = cb.checked;
+      queueChange({type:'todo.check', date: src==='today'?S.todayDate:item.sourceDate, normText:item.text, checked:cb.checked});
+      render();
+    });
+  });
+  const addBtn = $('#addBtn');
+  if (addBtn) addBtn.addEventListener('click', () => {
+    const txt = $('#addTxt').value.trim(); if (!txt) return;
+    const ent = $('#addEnt').value || null;
+    S.today.todos.push({entity:ent, text:txt, checked:false, carriedForward:false, carryCount:0, addedBy:'app'});
+    queueChange({type:'todo.add', date:S.todayDate, entity:ent, text:txt});
+    render();
+  });
+  const ntBtn = $('#ntBtn');
+  if (ntBtn) ntBtn.addEventListener('click', () => {
+    const topic = $('#ntTopic').value.trim(), bodyTxt = $('#ntBody').value.trim();
+    if (!topic && !bodyTxt) return;
+    const ent = $('#ntEnt').value || null;
+    queueChange({type:'note.add', date:S.todayDate, entity:ent, headingText:topic||'App note', body:bodyTxt});
+    applyRecord({changes:[{type:'note.add', date:S.todayDate, entity:ent, headingText:topic||'App note', body:bodyTxt}]});
+    render();
+  });
+  document.querySelectorAll('.nf').forEach(b => b.addEventListener('click', () => {
+    notesFilter = b.dataset.f;
+    try { localStorage.setItem('plannerNotesFilterGH', notesFilter); } catch(e) {}
+    render();
+  }));
+}
+document.querySelectorAll('#nav button').forEach(b => b.addEventListener('click', () => {
+  cur = b.dataset.t;
+  document.querySelectorAll('#nav button').forEach(x=>x.classList.toggle('on', x===b));
+  window.scrollTo(0,0);
+  render();
+}));
+
+/* ------------ setup / init ------------ */
+function showSetup(msg) {
+  $('#content').innerHTML = '<div class="setup"><div class="card"><h2>Connect to your planner</h2><div class="body">'+
+    (msg?'<p style="color:var(--err)">'+esc(msg)+'</p>':'')+
+    '<p>Paste your GitHub access token (fine-grained, scoped to <b>planner-state</b> and <b>planner-app</b>, Contents read &amp; write). It is stored only on this device.</p>'+
+    '<input id="tokIn" placeholder="github_pat_…" value="'+esc(tokGet())+'">'+
+    '<button id="tokSave">Save &amp; load planner</button></div></div></div>';
+  $('#tokSave').addEventListener('click', () => {
+    try { localStorage.setItem('ghToken', $('#tokIn').value.trim()); } catch(e) {}
+    init();
+  });
+}
+async function init() {
+  if (!tokGet()) { showSetup(); return; }
+  $('#content').innerHTML = '<div class="loading">Loading planner…</div>';
+  try {
+    await loadState();
+    restorePending();
+    render();
+  } catch(e) {
+    if (e && e.auth) showSetup('Token rejected by GitHub — check it and try again.');
+    else $('#content').innerHTML = '<div class="loading">Could not load planner.<br><span style="font-size:12px">'+esc(e.message||e)+'</span></div>';
+  }
+}
+$('#refreshBtn').addEventListener('click', init);
+$('#setupBtn').addEventListener('click', () => showSetup());
+init();
+</script>
+</body>
+</html>

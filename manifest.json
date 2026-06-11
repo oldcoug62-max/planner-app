@@ -1,0 +1,8 @@
+{
+  "name": "Day Planner",
+  "short_name": "Planner",
+  "display": "standalone",
+  "start_url": "./index.html",
+  "background_color": "#f7f6f3",
+  "theme_color": "#0048A8"
+}
