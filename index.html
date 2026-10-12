@@ -134,9 +134,18 @@ const fmtDay = d => new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:
 const mondayOf = d => { const dt = new Date(d+'T12:00:00'); dt.setDate(dt.getDate() - ((dt.getDay()+6)%7)); return dt.toISOString().slice(0,10); };
 
 /* ------------ load ------------ */
+function dayByDate(d) {
+  if (S.today && S.today.dateInfo && S.today.dateInfo.date === d) return S.today;
+  if (S.futureDays && S.futureDays[d]) return S.futureDays[d];
+  if (S.todayDate && d > S.todayDate) {
+    S.futureDays = S.futureDays || {};
+    return (S.futureDays[d] = {dateInfo:{date:d}, schedule:{}, priorities:[], todos:[], notes:[]});
+  }
+  return null;
+}
 function applyRecord(rec) {
   for (const ch of (rec.changes||[])) {
-    const day = (S.today && S.today.dateInfo && S.today.dateInfo.date === ch.date) ? S.today : null;
+    const day = dayByDate(ch.date);
     if (ch.type === 'todo.check') {
       const tgt = norm(ch.normText || ch.text);
       if (day) for (const td of day.todos) if (norm(td.text) === tgt) td.checked = !!ch.checked;
@@ -214,7 +223,7 @@ function renderToday() {
     (keys.length ? keys.map(k=>{const v=sch[k];return '<div class="row"><span class="slot">'+esc(k)+'</span><span>'+(v.entity?entityChip(v.entity):'')+(v.bold?'<b>':'')+esc(v.text)+(v.bold?'</b>':'')+(v.source?'<span class="src">· '+esc(v.source)+'</span>':'')+'</span></div>';}).join('') : '<div class="empty">Schedule clear at last build.</div>')+'</div></div>';
   const todos = (S.today && S.today.todos) || [];
   h += '<div class="card"><h2>TO-DOs</h2><div class="body">'+(todos.map((td,i)=>todoRow(td,i,'today')).join('')||'<div class="empty">None.</div>')+
-    '<div class="addbar"><select id="addEnt"><option value="">—</option>'+Object.entries(S.entities).map(([k,v])=>'<option value="'+k+'">'+esc(v.name)+'</option>').join('')+'</select><input id="addTxt" placeholder="Add a TO-DO…"><button id="addBtn">Add</button></div></div></div>';
+    '<div class="addbar"><select id="addEnt"><option value="">—</option>'+Object.entries(S.entities).map(([k,v])=>'<option value="'+k+'">'+esc(v.name)+'</option>').join('')+'</select><input id="addTxt" placeholder="Add a TO-DO…"><input id="addDate" type="date" value="'+S.todayDate+'" style="flex:0 0 auto"><button id="addBtn">Add</button></div></div></div>';
   const notes = (S.today && S.today.notes) || [];
   h += '<div class="card"><h2>Today’s notes</h2><div class="body">'+(notes.map(n=>'<div class="note"><div class="hd">'+(n.entity?entityChip(n.entity):'')+esc(n.headingText)+'</div><div class="bd">'+esc(n.body)+'</div></div>').join('')||'<div class="empty">None yet.</div>')+'</div></div>';
   return h;
@@ -302,8 +311,11 @@ function render() {
   if (addBtn) addBtn.addEventListener('click', () => {
     const txt = $('#addTxt').value.trim(); if (!txt) return;
     const ent = $('#addEnt').value || null;
-    S.today.todos.push({entity:ent, text:txt, checked:false, carriedForward:false, carryCount:0, addedBy:'app'});
-    queueChange({type:'todo.add', date:S.todayDate, entity:ent, text:txt});
+    const dt = ($('#addDate') && $('#addDate').value) || S.todayDate;
+    const day = dayByDate(dt);
+    if (day) day.todos.push({entity:ent, text:txt, checked:false, carriedForward:false, carryCount:0, addedBy:'app'});
+    queueChange({type:'todo.add', date:dt, entity:ent, text:txt});
+    if (dt > S.todayDate) { $('#sync').className='sync show ok'; $('#sync').textContent='✓ Queued for '+dt+' — see Horizon'; setTimeout(()=>{ $('#sync').className='sync'; }, 3500); }
     render();
   });
   const ntBtn = $('#ntBtn');
